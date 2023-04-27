@@ -19,7 +19,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "me.legadyn.kinectminecraft.KinectMinecraft"
+      "me.legadyn.kinectminecraft.KinectArmorStand"
     ]
   },
   "mixins": [
