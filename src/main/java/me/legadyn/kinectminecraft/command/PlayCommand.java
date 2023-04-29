@@ -27,6 +27,8 @@ public class PlayCommand {
 
     private static ConvertedArmorStand convertedArmorStand;
 
+    private static long wait = 0;
+
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
         dispatcher.register(CommandManager.literal("kinect")
                 .then(CommandManager.literal("play").then(CommandManager.argument("action", StringArgumentType.string())
@@ -37,7 +39,7 @@ public class PlayCommand {
 
     }
 
-    public static int run(CommandContext<ServerCommandSource> context, String action) {
+    public static int run(CommandContext<ServerCommandSource> context, String action) throws CommandSyntaxException {
         ServerCommandSource src = context.getSource();
 
         InputStream inputStream = KinectArmorStand.class.getClassLoader().getResourceAsStream(action + ".txt");
@@ -54,28 +56,57 @@ public class PlayCommand {
         }
         s.close();
 
-        try {
-            convertedArmorStand = new ConvertedArmorStand(src.getPlayer(), list);
-        } catch (CommandSyntaxException e) {
-            e.printStackTrace();
-        }
-
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        /*executor.scheduleAtFixedRate(() -> {
-            if (convertedArmorStand != null) {
-                convertedArmorStand.nextMovement();
-            }
-        }, 0, 30, TimeUnit.MILLISECONDS);*/
 
-        // Ejecuta la acción que deseas realizar cada 1 segundo
-        Thread thread = new Thread(() -> {
+        KinectArmorStand.executorService.scheduleAtFixedRate(new Runnable() {
             short tick = 0;
+            ConvertedArmorStand convertedArmorStand = new ConvertedArmorStand(src.getPlayer(), list);
+            @Override
+            public void run() {
+                if (convertedArmorStand != null) {
+                    long startTime = System.currentTimeMillis();
+
+                    tick++;
+                    if (tick > list.size() - 1) {
+                        convertedArmorStand = null;
+                        return;
+                    }
+                    KinectArmorStand.LOGGER.info("Tick " + tick);
+                    convertedArmorStand.nextMovement(tick);
+                    FileUtils.writeState(convertedArmorStand.getArmorStand().getUuidAsString(), tick);
+
+                    long duration = System.currentTimeMillis() - startTime;
+                    float delayMillis = 30;
+                    if (duration < delayMillis) {
+                       wait = (long) (delayMillis - duration);
+                        try {
+                            Thread.sleep(wait);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+        }, 0, 1, TimeUnit.MILLISECONDS);
+
+
+       /* Thread thread = new Thread() {
+            short tick = 0;
+            ConvertedArmorStand convertedArmorStand;
+            @Override
+            public void run() {
+                try {
+                    convertedArmorStand = new ConvertedArmorStand(src.getPlayer(), list);
+                } catch (CommandSyntaxException e) {
+                    e.printStackTrace();
+                }
                 while (convertedArmorStand != null && !Thread.currentThread().isInterrupted()) {
                     long startTime = System.currentTimeMillis();
 
                     tick++;
                     if (tick > list.size() - 1) {
                         convertedArmorStand = null;
+                        KinectArmorStand.LOGGER.info("Terminado en tick" + tick);
                         return;
                     }
                     KinectArmorStand.LOGGER.info("Tick " + tick);
@@ -92,11 +123,11 @@ public class PlayCommand {
                         }
                     }
                 } //Thread.currentThread().interrupt();
-            });
-
-        thread.start();
-        KinectArmorStand.threadList.add(thread);
-
+            }
+        };*/
+        //thread.start();
+        //KinectArmorStand.threadList.add(thread);
+        //KinectArmorStand.scheduledExecutorServices.add(executor);
         return 1;
     }
 
@@ -116,37 +147,35 @@ public class PlayCommand {
         }
         s.close();
 
-        convertedArmorStand = new ConvertedArmorStand(armorStand, list);
-        Thread thread = new Thread() {
+        KinectArmorStand.executorService.scheduleAtFixedRate(new Runnable() {
             short tick = ticked;
+            ConvertedArmorStand convertedArmorStand = new ConvertedArmorStand(armorStand, list);
             @Override
             public void run() {
-                while (convertedArmorStand != null && !Thread.currentThread().isInterrupted()) {
+                if (convertedArmorStand != null) {
                     long startTime = System.currentTimeMillis();
 
                     tick++;
                     if (tick > list.size() - 1) {
                         convertedArmorStand = null;
-                        KinectArmorStand.LOGGER.info("Terminado en tick" + tick);
                         return;
                     }
                     KinectArmorStand.LOGGER.info("Tick " + tick);
                     convertedArmorStand.nextMovement(tick);
-                    FileUtils.writeState(armorStand.getUuidAsString(), tick);
+                    FileUtils.writeState(convertedArmorStand.getArmorStand().getUuidAsString(), tick);
 
                     long duration = System.currentTimeMillis() - startTime;
                     float delayMillis = 30;
                     if (duration < delayMillis) {
+                        wait = (long) (delayMillis - duration);
                         try {
-                            Thread.sleep((long) (delayMillis - duration));
+                            Thread.sleep(wait);
                         } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
                         }
                     }
-                } //Thread.currentThread().interrupt();
+                }
             }
-        };
-        thread.start();
-        KinectArmorStand.threadList.add(thread);
+        }, 0, 1, TimeUnit.MILLISECONDS);
     }
 }

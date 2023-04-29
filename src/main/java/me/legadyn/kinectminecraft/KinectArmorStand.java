@@ -43,6 +43,8 @@ public class KinectArmorStand implements ModInitializer {
 	public static List<Thread> threadList = new ArrayList<>();
 	public static List<ScheduledExecutorService> scheduledExecutorServices = new ArrayList<>();
 
+	public static ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
 	DatagramSocket udpSocket;
 
 	public KinectArmorStand() throws SocketException {
@@ -118,11 +120,7 @@ public class KinectArmorStand implements ModInitializer {
 
 			if (world.getRegistryKey().equals(World.OVERWORLD)) {
 				// Detener los threads de los armorstands
-				for (Thread thread : threadList) {
-					thread.interrupt();
-					LOGGER.info("Thread descargado");
-				}
-				threadList.clear();
+				executorService.shutdownNow();
 			}
 		});
 	}
