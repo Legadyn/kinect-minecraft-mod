@@ -13,11 +13,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.UUID;
 
 public class FileUtils {
     public static JSONObject jsonObject;
     static Path filePath;
+    static Path animationsPath;
 
     public FileUtils(ServerWorld world) {
         Path configPath = world.getServer().getSavePath(WorldSavePath.ROOT).toFile().toPath();
@@ -33,12 +35,13 @@ public class FileUtils {
     public static void createConfigFile(ServerWorld world) {
         // Obtener la carpeta de configuración de tu mod
         Path configPath = world.getServer().getSavePath(WorldSavePath.ROOT).toFile().toPath();
+        Path animationsPath = world.getServer().getSavePath(WorldSavePath.ROOT).toFile().toPath().resolve("animations");
         Path filePath = configPath.resolve("armorstands.json");
 
         try {
             // Crear la carpeta de configuración si no existe
             Files.createDirectories(configPath);
-
+            Files.createDirectories(animationsPath);
             // Crear el archivo de texto si no existe
             if (!Files.exists(filePath)) {
                 Files.createFile(filePath);
@@ -46,6 +49,18 @@ public class FileUtils {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void writeAnimation(String name, LinkedList<String> arrData) throws IOException {
+        FileWriter writer = new FileWriter(animationsPath.resolve(name + ".txt").toString());
+        int size = arrData.size();
+        for (int i = 0; i < size; i++) {
+            String str = arrData.get(i).toString();
+            writer.write(str);
+            if (i < size - 1)
+                writer.write("\n");
+        }
+        writer.close();
     }
 
     public static void writeState(String UUID, float value) {

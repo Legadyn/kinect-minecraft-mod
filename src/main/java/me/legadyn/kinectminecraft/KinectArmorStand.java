@@ -1,6 +1,7 @@
 package me.legadyn.kinectminecraft;
 
 import me.legadyn.kinectminecraft.command.PlayCommand;
+import me.legadyn.kinectminecraft.command.SaveCommand;
 import me.legadyn.kinectminecraft.fabric.MovingArmorStand;
 import me.legadyn.kinectminecraft.socket.SocketReceivedPacket;
 import me.legadyn.kinectminecraft.socket.UDPServer;
@@ -20,10 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,15 +33,14 @@ public class KinectArmorStand implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger("kinectminecraft");
 
 	private static KinectArmorStand instance;
-	private MovingArmorStand armorstand;
+	public static MovingArmorStand realtimeArmorStand;
 	private UDPServer server;
 	private Runnable task;
-	private boolean startSaving = false;
+	public static boolean startSaving = false;
 	public static ServerWorld overworld;
-	public static List<Thread> threadList = new ArrayList<>();
-	public static List<ScheduledExecutorService> scheduledExecutorServices = new ArrayList<>();
+	public static LinkedList<ArmorStandMovement> cache = new LinkedList<>();
 
-	public static ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+	public static List<ScheduledExecutorService> scheduledExecutorServices = new ArrayList<>();
 
 	DatagramSocket udpSocket;
 
@@ -51,13 +48,7 @@ public class KinectArmorStand implements ModInitializer {
 
 	}
 
-	/*private LinkedList<ArmorStandMovement> cache = new LinkedList<>();
-
-	private ConvertedArmorStand convertedArmorStand;*/
-	public static KinectArmorStand getInstance() {
-		return instance;
-	}
-	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+	private final ScheduledExecutorService resumeScheduler = Executors.newScheduledThreadPool(1);
 
 	@Override
 	public void onInitialize() {
@@ -95,6 +86,7 @@ public class KinectArmorStand implements ModInitializer {
 			CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
 				//KinectCommand.register(dispatcher);
 				PlayCommand.register(dispatcher, dedicated);
+				SaveCommand.register(dispatcher, dedicated);
 		});
 	});
 
@@ -106,21 +98,25 @@ public class KinectArmorStand implements ModInitializer {
 			Iterator<String> keys = FileUtils.jsonObject.keys();
 			while(keys.hasNext()) {
 				String uuid = keys.next();
+				if(overworld.getEntity(UUID.fromString(uuid)) != null) return;
 
 				JSONObject uuidObject = FileUtils.jsonObject.getJSONObject(uuid);
 				short tick = (short) uuidObject.getFloat("tick");
 				String animation = uuidObject.getString("animation");
-				long delay = 2;
-				scheduler.schedule(() -> server.execute(() -> PlayCommand.resumeArmorStand(((ArmorStandEntity) overworld.getEntity(UUID.fromString(uuid))), tick, animation)), delay, TimeUnit.SECONDS);
 
+				//Schedule task to 3 sec to give time to the server to load the entities
+				resumeScheduler.schedule(() -> server.execute(() -> PlayCommand.resumeArmorStand(((ArmorStandEntity) overworld.getEntity(UUID.fromString(uuid))), tick, animation)), 2, TimeUnit.SECONDS);
 			}
 		});
 
 		ServerWorldEvents.UNLOAD.register((MinecraftServer server, ServerWorld world) -> {
 
 			if (world.getRegistryKey().equals(World.OVERWORLD)) {
-				// Detener los threads de los armorstands
-				executorService.shutdownNow();
+				// Stoping all tasks on executorservice
+				for(ScheduledExecutorService executorService : scheduledExecutorServices) {
+					executorService.shutdown();
+				}
+				scheduledExecutorServices.clear();
 			}
 		});
 	}
@@ -129,6 +125,26 @@ public class KinectArmorStand implements ModInitializer {
 		byte[] buf = message.getBytes();
 		DatagramPacket packet = new DatagramPacket(buf, buf.length, address, port);
 		udpSocket.send(packet);
+	}
+
+	public LinkedList<ArmorStandMovement> getCache() {
+		return cache;
+	}
+
+	public static KinectArmorStand getInstance() {
+		return instance;
+	}
+
+	public static boolean isStartSaving() {
+		return startSaving;
+	}
+
+	public void startSaving() {
+		startSaving = true;
+	}
+
+	public MovingArmorStand getArmorStand() {
+		return realtimeArmorStand;
 	}
 
 

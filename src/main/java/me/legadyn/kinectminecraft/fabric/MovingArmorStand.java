@@ -1,6 +1,7 @@
 package me.legadyn.kinectminecraft.fabric;
 
 import me.legadyn.kinectminecraft.ArmorStandMovement;
+import me.legadyn.kinectminecraft.KinectArmorStand;
 import net.minecraft.client.render.entity.model.ArmorStandArmorEntityModel;
 import net.minecraft.client.render.entity.model.ArmorStandEntityModel;
 import net.minecraft.entity.EntityType;
@@ -59,6 +60,10 @@ public class MovingArmorStand {
 
         String[] decoded = packet.split(":");
         ArmorStandMovement move = new ArmorStandMovement(decoded);
+
+        if(KinectArmorStand.isStartSaving()) {
+            KinectArmorStand.getInstance().getCache().add(move);
+        }
 
         armorStand.setHeadRotation(toEulerAngle(new Vec3f(move.headPitch,0,0)));
 
