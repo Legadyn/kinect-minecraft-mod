@@ -16,6 +16,8 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Time;
 import java.util.LinkedList;
@@ -45,21 +47,11 @@ public class PlayCommand {
     public static int run(CommandContext<ServerCommandSource> context, String action) throws CommandSyntaxException {
         ServerCommandSource src = context.getSource();
 
-        InputStream inputStream = KinectArmorStand.class.getClassLoader().getResourceAsStream(action + ".txt");
-            if (inputStream == null) {
-                src.sendError(new LiteralText("File " + action + ".txt not found"));
-                return 0;
-            }
-
-        Scanner s = new Scanner(inputStream);
-
-        LinkedList<String> list = new LinkedList<>();
-        while (s.hasNext()) {
-            list.add(s.next());
-        }
-        s.close();
+        //read movements from file
+        LinkedList<String> list = FileUtils.readAnimation(action);
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
         executor.scheduleAtFixedRate(new Runnable() {
             short tick = 0;
             ConvertedArmorStand convertedArmorStand = new ConvertedArmorStand(src.getPlayer(), list);
@@ -96,18 +88,8 @@ public class PlayCommand {
 
     public static void resumeArmorStand(ArmorStandEntity armorStand, short ticked, String animation) {
 
-        InputStream inputStream = KinectArmorStand.class.getClassLoader().getResourceAsStream("armorstand" + ".txt");
-        if (inputStream == null) {
-            return;
-        }
-
         //Read animation file
-        Scanner s = new Scanner(inputStream);
-        LinkedList<String> list = new LinkedList<>();
-        while (s.hasNext()) {
-            list.add(s.next());
-        }
-        s.close();
+        LinkedList<String> list = FileUtils.readAnimation(animation);
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         //New runnable for every armorstand resumed

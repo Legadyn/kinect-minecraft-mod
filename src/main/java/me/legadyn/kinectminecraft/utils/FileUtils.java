@@ -7,13 +7,11 @@ import net.minecraft.world.World;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
+import java.util.Scanner;
 import java.util.UUID;
 
 public class FileUtils {
@@ -35,16 +33,20 @@ public class FileUtils {
     public static void createConfigFile(ServerWorld world) {
         // Obtener la carpeta de configuración de tu mod
         Path configPath = world.getServer().getSavePath(WorldSavePath.ROOT).toFile().toPath();
-        Path animationsPath = world.getServer().getSavePath(WorldSavePath.ROOT).toFile().toPath().resolve("animations");
         Path filePath = configPath.resolve("armorstands.json");
 
+        animationsPath = world.getServer().getSavePath(WorldSavePath.ROOT).toFile().toPath().resolve("animations");
+
         try {
-            // Crear la carpeta de configuración si no existe
+            // Create config folder and file if they don't exist
             Files.createDirectories(configPath);
             Files.createDirectories(animationsPath);
-            // Crear el archivo de texto si no existe
+
             if (!Files.exists(filePath)) {
-                Files.createFile(filePath);
+                //Writing brackets in JSON to avoid exception
+                FileWriter writer = new FileWriter(filePath.toString());
+                writer.write("{}");
+                writer.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -81,6 +83,23 @@ public class FileUtils {
     public static float getState(String UUID) {
         return jsonObject.getFloat(UUID);
     }
+
+    public static LinkedList<String> readAnimation(String name) {
+        Scanner s = null;
+        try {
+            s = new Scanner(new File(animationsPath.resolve(name + ".txt").toString()));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        LinkedList<String> list = new LinkedList<>();
+        while (s.hasNext()) {
+            list.add(s.next());
+        }
+        s.close();
+        return list;
+    }
+
 
 
 }

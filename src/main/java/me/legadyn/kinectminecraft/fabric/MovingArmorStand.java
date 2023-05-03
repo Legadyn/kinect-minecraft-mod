@@ -61,6 +61,7 @@ public class MovingArmorStand {
         String[] decoded = packet.split(":");
         ArmorStandMovement move = new ArmorStandMovement(decoded);
 
+        //adds every movement to the main cache in KinectArmorStand
         if(KinectArmorStand.isStartSaving()) {
             KinectArmorStand.getInstance().getCache().add(move);
         }

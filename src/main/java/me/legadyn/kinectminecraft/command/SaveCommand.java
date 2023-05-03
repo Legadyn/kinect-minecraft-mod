@@ -12,6 +12,7 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.LinkedList;
 
 public class SaveCommand {
@@ -61,7 +62,7 @@ public class SaveCommand {
         try {
             FileUtils.writeAnimation(arg, list);
         } catch (IOException e) {
-            e.printStackTrace();
+            KinectArmorStand.LOGGER.info("Error while saving animation: " + e.getMessage());
         }
     }
 

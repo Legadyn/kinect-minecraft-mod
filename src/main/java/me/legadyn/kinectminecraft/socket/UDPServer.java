@@ -12,8 +12,9 @@ import java.net.*;
 
 
 public class UDPServer {
+
     private DatagramSocket udpSocket;
-    private boolean running = true;
+
     private Thread listenThread;
 
     public UDPServer() throws SocketException {
@@ -25,7 +26,7 @@ public class UDPServer {
     }
 
 
-    public void listen() throws Exception {
+    public void listen() {
 
         if(listenThread == null) {
             listenThread = new Thread(() -> {
@@ -41,26 +42,11 @@ public class UDPServer {
                     String msg = new String(packet.getData()).trim();
                     // Llamamos al evento personalizado SocketReceivedPacket
                     SocketReceivedPacket.EVENT.invoker().onMyCustomEvent(msg);
-                    /*FabricLoader.getInstance().getEntrypointContainers("socketReceivedPacket", SocketReceivedPacket.class).forEach((container) -> {
-                        container.getEntrypoint().onPacketReceived(event);
-                    });*/
                 }
             });
             listenThread.start();
         }
-        /*while (running) {
-            byte[] buf = new byte[256];
-            DatagramPacket packet = new DatagramPacket(buf, buf.length);
-            udpSocket.receive(packet);
-            String msg = new String(packet.getData()).trim();
-            // Llamamos al evento personalizado SocketReceivedPacket
-            SocketReceivedPacket.EVENT.invoker().onMyCustomEvent("Hola, soy un argumento personalizado para el evento");
-            /*FabricLoader.getInstance().getEntrypointContainers("socketReceivedPacket", SocketReceivedPacket.class).forEach((container) -> {
-                container.getEntrypoint().onPacketReceived(event);
-            });*/
-
-
-        }
+    }
 
 
     public void stop() {
@@ -72,7 +58,7 @@ public class UDPServer {
     }
 
     public void onInitialize() {
-        // Inicializamos el servidor cuando se inicie Fabric
+        // Inicializamos el servidor
         try {
             initializeServer();
             listen();

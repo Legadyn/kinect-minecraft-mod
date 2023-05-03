@@ -34,7 +34,7 @@ public class KinectArmorStand implements ModInitializer {
 
 	private static KinectArmorStand instance;
 	public static MovingArmorStand realtimeArmorStand;
-	private UDPServer server;
+	private UDPServer kinectServer;
 	private Runnable task;
 	public static boolean startSaving = false;
 	public static ServerWorld overworld;
@@ -45,58 +45,56 @@ public class KinectArmorStand implements ModInitializer {
 	DatagramSocket udpSocket;
 
 	public KinectArmorStand() throws SocketException {
-
 	}
 
 	private final ScheduledExecutorService resumeScheduler = Executors.newScheduledThreadPool(1);
 
 	@Override
 	public void onInitialize() {
+		instance = this;
 		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
 			LOGGER.info("¡Cliente iniciado!");
 
-			InetAddress address = null;
-			try {
-				address = InetAddress.getByName("localhost");
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			}
-			int port = 62034;
-			String message = "Hello World!";
-			try {
-				server = new UDPServer(); //nueva instancia del servidor, se crea el servidor
-				udpSocket = new DatagramSocket(); //se hace un socket para poder enviar mensajes desde el cliente
-			} catch (SocketException e) {
-				e.printStackTrace();
-			}
-			try {
+			/*try {
 				for (int i = 0; i < 5; i++) {
 					sendPacket(message + i, address, port);
 				}
 
 			} catch (Exception e) {
 				e.printStackTrace();
-			}
+			}*/
 
 			SocketReceivedPacket.EVENT.register((event) -> {
-				LOGGER.info("Evento recibido: " + event);
+				if(realtimeArmorStand != null) {
+					realtimeArmorStand.update(event);
+				}
 				return ActionResult.PASS;
 			});
 
 			CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
-				//KinectCommand.register(dispatcher);
+
 				PlayCommand.register(dispatcher, dedicated);
 				SaveCommand.register(dispatcher, dedicated);
 		});
 	});
 
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-			LOGGER.info("¡Servidor iniciado!");
+			try {
+				kinectServer = new UDPServer(); //nueva instancia del servidor, se crea el servidor
+				//udpSocket = new DatagramSocket(); se hace un socket para poder enviar mensajes desde el cliente
+			} catch (SocketException e) {
+				e.printStackTrace();
+			}
+			LOGGER.info("Servidor iniciado!");
+
 			overworld = server.getWorld(World.OVERWORLD);
+
 			FileUtils.createConfigFile(overworld);
 			FileUtils fileUtils = new FileUtils(overworld);
+
+			//resume armorstand stuff
 			Iterator<String> keys = FileUtils.jsonObject.keys();
-			while(keys.hasNext()) {
+			while(keys.hasNext()) { //read every armorstand obj
 				String uuid = keys.next();
 				if(overworld.getEntity(UUID.fromString(uuid)) != null) return;
 
