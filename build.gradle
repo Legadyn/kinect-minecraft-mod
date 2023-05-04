@@ -29,6 +29,9 @@ repositories {
 	// for more information about repositories.
 }
 
+configurations {
+	shadow.extendsFrom implementation
+}
 dependencies {
 	// To change the versions see the gradle.properties file
 	shadow 'org.json:json:20230227'
@@ -62,16 +65,23 @@ java {
 	withSourcesJar()
 }
 
-jar {
-	from {
-		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+shadowJar {
+	classifier = "shadow"
+	configurations = [project.configurations.shadow]
+	mergeServiceFiles()
+}
+
+remapJar {
+	dependsOn shadowJar
+	input = shadowJar.archiveFile.get().getAsFile()
+	addNestedDependencies = true
+	from("LICENSE") {
+		rename { "${it}_${project.archivesBaseName}"}
 	}
 }
 
-shadowJar {
-	configurations = [project.configurations.shadow]
-	mergeServiceFiles()
-	classifier = 'shadow'
+assemble {
+	dependsOn remapJar
 }
 
 jar.finalizedBy shadowJar

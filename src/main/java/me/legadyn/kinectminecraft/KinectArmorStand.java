@@ -9,6 +9,7 @@ import me.legadyn.kinectminecraft.utils.FileUtils;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.entity.decoration.ArmorStandEntity;
@@ -51,41 +52,31 @@ public class KinectArmorStand implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		instance = this;
-		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-			LOGGER.info("¡Cliente iniciado!");
 
-			/*try {
-				for (int i = 0; i < 5; i++) {
-					sendPacket(message + i, address, port);
-				}
+		CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
 
-			} catch (Exception e) {
-				e.printStackTrace();
-			}*/
-
-			SocketReceivedPacket.EVENT.register((event) -> {
-				if(realtimeArmorStand != null) {
-					realtimeArmorStand.update(event);
-				}
-				return ActionResult.PASS;
-			});
-
-			CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
-
-				PlayCommand.register(dispatcher, dedicated);
-				SaveCommand.register(dispatcher, dedicated);
+			PlayCommand.register(dispatcher, dedicated);
+			SaveCommand.register(dispatcher, dedicated);
 		});
-	});
+
+		SocketReceivedPacket.EVENT.register((event) -> {
+			if(realtimeArmorStand != null) {
+				realtimeArmorStand.update(event);
+			}
+			return false;
+		});
 
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+
 			try {
 				kinectServer = new UDPServer(); //nueva instancia del servidor, se crea el servidor
-				//udpSocket = new DatagramSocket(); se hace un socket para poder enviar mensajes desde el cliente
+				//udpSocket = new DatagramSocket(); //se hace un socket para poder enviar mensajes desde el cliente
 			} catch (SocketException e) {
 				e.printStackTrace();
 			}
 			LOGGER.info("Servidor iniciado!");
 
+			//get overworld in fabric
 			overworld = server.getWorld(World.OVERWORLD);
 
 			FileUtils.createConfigFile(overworld);
@@ -106,16 +97,13 @@ public class KinectArmorStand implements ModInitializer {
 			}
 		});
 
-		ServerWorldEvents.UNLOAD.register((MinecraftServer server, ServerWorld world) -> {
-
-			if (world.getRegistryKey().equals(World.OVERWORLD)) {
-				// Stoping all tasks on executorservice
-				for(ScheduledExecutorService executorService : scheduledExecutorServices) {
-					executorService.shutdown();
-				}
-				scheduledExecutorServices.clear();
-				kinectServer.stop();
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			// Stoping all tasks on executorservice
+			for(ScheduledExecutorService executorService : scheduledExecutorServices) {
+				executorService.shutdown();
 			}
+			scheduledExecutorServices.clear();
+			kinectServer.stop();
 		});
 	}
 
