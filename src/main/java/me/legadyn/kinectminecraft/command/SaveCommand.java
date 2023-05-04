@@ -65,7 +65,4 @@ public class SaveCommand {
             KinectArmorStand.LOGGER.info("Error while saving animation: " + e.getMessage());
         }
     }
-
-
-
 }

@@ -35,7 +35,6 @@ public class KinectArmorStand implements ModInitializer {
 	private static KinectArmorStand instance;
 	public static MovingArmorStand realtimeArmorStand;
 	private UDPServer kinectServer;
-	private Runnable task;
 	public static boolean startSaving = false;
 	public static ServerWorld overworld;
 	public static LinkedList<ArmorStandMovement> cache = new LinkedList<>();
@@ -115,6 +114,7 @@ public class KinectArmorStand implements ModInitializer {
 					executorService.shutdown();
 				}
 				scheduledExecutorServices.clear();
+				kinectServer.stop();
 			}
 		});
 	}

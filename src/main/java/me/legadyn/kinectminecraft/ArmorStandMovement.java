@@ -14,35 +14,10 @@ public class ArmorStandMovement {
 
     public double vecX,vecY,vecZ;
 
-
-
     public ArmorStandMovement( ) {
 
     }
 
-    /*public ArmorStandMovement(EntityArmorStand as, double vecX, double vecY, double vecZ, float yaw, float pitch) {
-        headPitch = as.headPose.getX();
-
-        right_armX = as.rightArmPose.getX();
-        right_armY = as.rightArmPose.getY();
-
-        left_armX = as.leftArmPose.getX();
-        left_armY = as.leftArmPose.getY();
-
-        right_legX = as.rightLegPose.getX();
-        right_legY = as.rightLegPose.getY();
-
-        left_legX = as.leftLegPose.getX();
-        left_legY = as.leftLegPose.getY();
-
-        this.vecX = vecX;
-        this.vecY = vecY;
-        this.vecZ = vecZ;
-
-        this.yaw = yaw;
-        this.pitch = pitch;
-
-    }*/
     //yaw and pitch inversed
     public ArmorStandMovement(String[] decoded) {
         this.headPitch = Float.valueOf(decoded[0]);
