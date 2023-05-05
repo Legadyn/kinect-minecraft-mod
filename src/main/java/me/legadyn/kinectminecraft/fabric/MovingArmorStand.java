@@ -41,18 +41,8 @@ public class MovingArmorStand {
         armorStand.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
         armorStand.setNoGravity(true);
 
-        try {
-            Method[] methods = {ArmorStandEntity.class.getDeclaredMethod("setHideBasePlate", boolean.class),
-                    ArmorStandEntity.class.getDeclaredMethod("setShowArms", boolean.class)};
-            for(Method method : methods) {
-                method.setAccessible(true);
-                method.invoke(armorStand, true);
-            }
-        } catch(NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-
         world.spawnEntity(armorStand);
+        player.getServer().getCommandManager().execute(player.getCommandSource().withSilent(),"/data merge entity "+ armorStand.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
 
 
     }
@@ -83,7 +73,7 @@ public class MovingArmorStand {
         armorStand.setLeftLegRotation(toEulerAngle(new Vec3f(move.left_legX,move.left_legY,0)));
 
         //check if is refresh or update - check if armorstand.getyaw is ok
-        armorStand.refreshPositionAndAngles(armorStand.getBlockX() - move.vecZ, armorStand.getBlockY() - move.vecY , armorStand.getBlockZ() - move.vecX, (float) (armorStand.getYaw() - (move.yaw * 0.8)),  move.pitch + 10);
+        armorStand.updatePositionAndAngles(armorStand.getBlockX() - move.vecZ, armorStand.getBlockY() - move.vecY , armorStand.getBlockZ() - move.vecX, (float) (playerYaw - (move.yaw * 0.8)),  move.pitch + 10);
 
     }
 

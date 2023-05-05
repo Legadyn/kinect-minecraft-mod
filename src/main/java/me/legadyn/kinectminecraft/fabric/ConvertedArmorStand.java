@@ -37,21 +37,9 @@ public class ConvertedArmorStand {
         armorStand = EntityType.ARMOR_STAND.create(world);
         armorStand.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
         armorStand.setNoGravity(true);
-        ServerWorld serverWorld = (ServerWorld) world;
-
-
-        try {
-            Method[] methods = {ArmorStandEntity.class.getDeclaredMethod("setHideBasePlate", boolean.class),
-                    ArmorStandEntity.class.getDeclaredMethod("setShowArms", boolean.class)};
-            for(Method method : methods) {
-                method.setAccessible(true);
-                method.invoke(armorStand, true);
-            }
-        } catch(NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
 
         world.spawnEntity(armorStand);
+        player.getServer().getCommandManager().execute(player.getCommandSource().withSilent(),"/data merge entity "+ armorStand.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
 
         list.forEach(s -> {
             String[] decoded = s.split(":");

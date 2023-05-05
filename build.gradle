@@ -35,7 +35,7 @@ configurations {
 dependencies {
 	// To change the versions see the gradle.properties file
 	shadow 'org.json:json:20230227'
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	minecraft "net.minecraft:minecraft:${project.minecraft_version}:sources"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	//modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc:fabric-loader:0.14.9"
@@ -75,6 +75,7 @@ remapJar {
 	dependsOn shadowJar
 	input = shadowJar.archiveFile.get().getAsFile()
 	addNestedDependencies = true
+	classifier = 'deobf'
 	from("LICENSE") {
 		rename { "${it}_${project.archivesBaseName}"}
 	}
