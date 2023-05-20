@@ -3,23 +3,32 @@ package me.legadyn.kinectminecraft;
 import me.legadyn.kinectminecraft.command.PlayCommand;
 import me.legadyn.kinectminecraft.command.SaveCommand;
 import me.legadyn.kinectminecraft.fabric.MovingArmorStand;
+import me.legadyn.kinectminecraft.fabric.SplitArmorStand;
 import me.legadyn.kinectminecraft.socket.SocketReceivedPacket;
 import me.legadyn.kinectminecraft.socket.UDPServer;
 import me.legadyn.kinectminecraft.utils.FileUtils;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.MarkerEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
 
 import java.net.*;
 import java.util.*;
@@ -35,6 +44,7 @@ public class KinectArmorStand implements ModInitializer {
 
 	private static KinectArmorStand instance;
 	public static MovingArmorStand realtimeArmorStand;
+	public static SplitArmorStand splitArmorStand;
 	private UDPServer kinectServer;
 	public static boolean startSaving = false;
 	public static ServerWorld overworld;
@@ -42,8 +52,8 @@ public class KinectArmorStand implements ModInitializer {
 
 	public static List<ScheduledExecutorService> scheduledExecutorServices = new ArrayList<>();
 
+	public static ServerPlayerEntity playertest;
 	DatagramSocket udpSocket;
-
 	public KinectArmorStand() throws SocketException {
 	}
 
@@ -59,7 +69,12 @@ public class KinectArmorStand implements ModInitializer {
 			SaveCommand.register(dispatcher, dedicated);
 		});
 
+
 		SocketReceivedPacket.EVENT.register((event) -> {
+			if(splitArmorStand != null) {
+				splitArmorStand.update(event);
+				return false;
+			}
 			if(realtimeArmorStand != null) {
 				realtimeArmorStand.update(event);
 			}
@@ -93,7 +108,11 @@ public class KinectArmorStand implements ModInitializer {
 				String animation = uuidObject.getString("animation");
 
 				//Schedule task to 3 sec to give time to the server to load the entities
-				resumeScheduler.schedule(() -> server.execute(() -> PlayCommand.resumeArmorStand(((ArmorStandEntity) overworld.getEntity(UUID.fromString(uuid))), tick, animation)), 2, TimeUnit.SECONDS);
+				try {
+					resumeScheduler.schedule(() -> server.execute(() -> PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation)), 2, TimeUnit.SECONDS);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 		});
 

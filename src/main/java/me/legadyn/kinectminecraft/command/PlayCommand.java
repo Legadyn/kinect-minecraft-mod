@@ -6,10 +6,13 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import me.legadyn.kinectminecraft.ArmorStandMovement;
 import me.legadyn.kinectminecraft.KinectArmorStand;
 import me.legadyn.kinectminecraft.fabric.ConvertedArmorStand;
 import me.legadyn.kinectminecraft.utils.FileUtils;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.MarkerEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -86,7 +89,7 @@ public class PlayCommand {
         return 1;
     }
 
-    public static void resumeArmorStand(ArmorStandEntity armorStand, short ticked, String animation) {
+    public static void resumeArmorStand(Entity entity, short ticked, String animation) {
 
         //Read animation file
         LinkedList<String> list = FileUtils.readAnimation(animation);
@@ -96,7 +99,8 @@ public class PlayCommand {
         executor.scheduleAtFixedRate(new Runnable() {
             //pass tick from json file to resume from
             short tick = ticked;
-            ConvertedArmorStand convertedArmorStand = new ConvertedArmorStand(armorStand, list);
+
+            ConvertedArmorStand convertedArmorStand = (entity instanceof MarkerEntity) ? new ConvertedArmorStand((MarkerEntity) entity, list) : new ConvertedArmorStand((ArmorStandEntity) entity, list) ;
 
             @Override
             public void run() {

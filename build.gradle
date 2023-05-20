@@ -34,6 +34,7 @@ configurations {
 }
 dependencies {
 	// To change the versions see the gradle.properties file
+	implementation 'org.json:json:20230227'
 	shadow 'org.json:json:20230227'
 	minecraft "net.minecraft:minecraft:${project.minecraft_version}:sources"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
