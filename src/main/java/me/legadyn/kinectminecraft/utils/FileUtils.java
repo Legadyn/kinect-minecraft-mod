@@ -1,18 +1,20 @@
 package me.legadyn.kinectminecraft.utils;
 
 import com.google.gson.JsonObject;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.core.jmx.Server;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedList;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
 
 public class FileUtils {
     public static JSONObject jsonObject;
@@ -80,16 +82,47 @@ public class FileUtils {
         }
     }
 
+    public static void writeMultiState(String UUID, HashMap<String, ArmorStandEntity> entityHashMap, float value) {
+
+        JSONObject uuidObject = new JSONObject();
+        uuidObject.put("tick", value);
+        uuidObject.put("animation", "armorstand");
+        for(Map.Entry<String, ArmorStandEntity> part : entityHashMap.entrySet()) {
+            uuidObject.put(part.getKey(), part.getValue().getUuid());
+        }
+        jsonObject.put(UUID, uuidObject);
+
+        try (FileWriter file = new FileWriter(filePath.toString())) {
+            file.write(jsonObject.toString());
+            file.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static HashMap<String, ArmorStandEntity> getMultiState(String UUID, World world) {
+        HashMap<String, ArmorStandEntity> entityHashMap = new HashMap<>();
+        JSONObject uuidObject = jsonObject.getJSONObject(UUID);
+        for(Map.Entry<String, Object> part : uuidObject.toMap().entrySet()) {
+            if(!part.getKey().equals("tick") && !part.getKey().equals("animation")) {
+                entityHashMap.put(part.getKey(), (ArmorStandEntity) world.getServer().getWorld(world.getRegistryKey()).getEntity((UUID) part.getValue()));
+            }
+        }
+        return entityHashMap;
+    }
+
     public static float getState(String UUID) {
         return jsonObject.getFloat(UUID);
     }
 
-    public static LinkedList<String> readAnimation(String name) {
+    public static LinkedList<String> readAnimation(String name, ServerPlayerEntity player) {
         Scanner s = null;
         try {
             s = new Scanner(new File(animationsPath.resolve(name + ".txt").toString()));
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            if(player != null) {
+                player.sendMessage(new LiteralText("Animation not found"), false);
+            }
         }
 
         LinkedList<String> list = new LinkedList<>();

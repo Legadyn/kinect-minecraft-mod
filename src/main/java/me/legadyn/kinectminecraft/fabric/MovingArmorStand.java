@@ -84,10 +84,12 @@ public class MovingArmorStand {
 
         //check if is refresh or update - check if armorstand.getyaw is ok
         //armorStand.updatePositionAndAngles(armorX - move.vecZ, armorY - move.vecY , armorZ - move.vecX, (float) (armorYaw - (move.yaw * 0.8)),  move.pitch + 10);
-        double scaleFactor = 300.0;
-        armorStand.updatePositionAndAngles(armorX - (move.vecZ / scaleFactor), armorY - (move.vecY / scaleFactor), armorZ - (move.vecX / scaleFactor), (float) (armorYaw - ((move.yaw * 0.8)/120)),  move.pitch + 10);
-        player.sendMessage(new LiteralText("X: " + armorStand.getX() + " Y: " + armorStand.getY() + " Z: " + armorStand.getZ()), false);
+        float scaleFactor = 500.0f;
+        armorStand.updatePositionAndAngles(armorStand.getX() - (move.vecZ / scaleFactor), armorStand.getY() - (move.vecY / scaleFactor), armorStand.getZ() - (move.vecX / scaleFactor), (float) (armorYaw - ((move.yaw * 0.8)/120)),  move.pitch + 10);
+        //player.sendMessage(new LiteralText("X: " + armorStand.getX() + " Y: " + armorStand.getY() + " Z: " + armorStand.getZ()), false);
     }
+
+
 
     private EulerAngle toEulerAngle(Vec3f rotation) {
         float pitch = rotation.getX();

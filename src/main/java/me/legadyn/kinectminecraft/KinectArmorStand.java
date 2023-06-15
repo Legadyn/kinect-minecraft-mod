@@ -109,7 +109,18 @@ public class KinectArmorStand implements ModInitializer {
 
 				//Schedule task to 3 sec to give time to the server to load the entities
 				try {
-					resumeScheduler.schedule(() -> server.execute(() -> PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation)), 2, TimeUnit.SECONDS);
+
+					resumeScheduler.schedule(() -> {
+
+						server.execute(() -> {
+							if(overworld.getEntity(UUID.fromString(uuid)).getScoreboardTags().contains("center")) {
+								PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation, true);
+							} else {
+								PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation, false);
+							}
+						});
+
+						}, 2, TimeUnit.SECONDS);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

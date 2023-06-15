@@ -78,7 +78,9 @@ public class SaveCommand {
                     c.right_legX + ":" + c.right_legY + ":" +
                     c.left_legX + ":" + c.left_legY + ":" +
                     c.right_upper_armX + ":" + c.right_upper_armY  + ":" +
+                    c.right_lower_armX + ":" + c.right_lower_armY  + ":" +
                     c.left_upper_armX + ":" + c.left_upper_armY  + ":" +
+                    c.left_lower_armX + ":" + c.left_lower_armY  + ":" +
                     c.vecX + ":" + c.vecY + ":" + c.vecZ + ":" + c.yaw + ":" + c.pitch;
             list.add(line);
         });
