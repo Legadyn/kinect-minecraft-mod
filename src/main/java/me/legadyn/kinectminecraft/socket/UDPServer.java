@@ -18,7 +18,6 @@ public class UDPServer {
         this.udpSocket = new DatagramSocket(62034);
     }
 
-
     public void listen() {
 
         if(listenThread == null) {

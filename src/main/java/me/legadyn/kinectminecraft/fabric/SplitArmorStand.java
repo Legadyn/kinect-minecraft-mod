@@ -8,6 +8,9 @@ import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardCriterion;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
@@ -36,6 +39,9 @@ public class SplitArmorStand {
 
     Vec3d centerPos;
 
+    Scoreboard scoreboard;
+    ScoreboardObjective shoulderLeftX, shoulderLeftY, shoulderRightX, shoulderRightY;
+
     public SplitArmorStand(Vec3d pos) {
         position = pos;
         position.add(position.multiply(3));
@@ -53,11 +59,18 @@ public class SplitArmorStand {
         centerMarker.setNoGravity(true);
         centerMarker.setInvisible(true);
         centerMarker.setInvulnerable(true);
+        centerMarker.addScoreboardTag("center");
         armorStands = createArmorMap(pos,world,player);
 
         world.spawnEntity(centerMarker);
         centerPos = centerMarker.getPos();
         centerYaw = armorStands.get("head").bodyYaw;
+        scoreboard = player.getServer().getScoreboard();
+        shoulderLeftX = scoreboard.addObjective("kinect_arm_shoulder_X1", ScoreboardCriterion.DUMMY, new LiteralText("kinect_arm_shoulder_X1"), ScoreboardCriterion.RenderType.INTEGER);
+        shoulderLeftY = scoreboard.addObjective("kinect_arm_shoulder_Y1", ScoreboardCriterion.DUMMY, new LiteralText("kinect_arm_shoulder_Y1"), ScoreboardCriterion.RenderType.INTEGER);
+        shoulderRightX = scoreboard.addObjective("kinect_arm_shoulder_X2", ScoreboardCriterion.DUMMY, new LiteralText("kinect_arm_shoulder_X2"), ScoreboardCriterion.RenderType.INTEGER);
+        shoulderRightY = scoreboard.addObjective("kinect_arm_shoulder_Y2", ScoreboardCriterion.DUMMY, new LiteralText("kinect_arm_shoulder_Y2"), ScoreboardCriterion.RenderType.INTEGER);
+
     }
 
     public static HashMap<String, ArmorStandEntity> createArmorMap(BlockPos pos, ServerWorld world, ServerPlayerEntity player) {
@@ -146,6 +159,7 @@ public class SplitArmorStand {
             ArmorStandEntity armorStandEntity = entry.getValue();
             NbtCompound nbt = armorStandEntity.getMainHandStack().getOrCreateNbt();
             //Vec3d centerPos = centerMarker.getPos();
+            //make armorstand rotates with kinect body (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10
 
             switch (key) {
                 case "head":
@@ -165,22 +179,38 @@ public class SplitArmorStand {
                 case "rightForeArm":
                     armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_lower_armX, move.right_lower_armY, 0)));
                     Vec3d rightForeArmOffset = new Vec3d(-nbt.getFloat("Long"), 0, 0);
-                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightForeArmOffset.getX(), centerPos.getY() + rightForeArmOffset.getY(), centerPos.getZ() + rightForeArmOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightForeArmOffset.getX(), centerPos.getY() + rightForeArmOffset.getY(), centerPos.getZ() + rightForeArmOffset.getZ(), centerMarker.getBodyRotation().getYaw(), centerMarker.getBodyRotation().getPitch());
                     //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(rightForeArmOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
                     break;
 
                 case "leftShoulder":
                     armorStandEntity.setLeftArmRotation(toEulerAngle(new Vec3f(-move.left_upper_armX, move.left_upper_armY, 0)));
                     Vec3d leftShoulderOffset = new Vec3d(nbt.getFloat("Long")-1, 0, 0);
-                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + leftShoulderOffset.getX(), centerPos.getY() + leftShoulderOffset.getY(), centerPos.getZ() + leftShoulderOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-                    //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(leftShoulderOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + leftShoulderOffset.getX(), centerPos.getY() + leftShoulderOffset.getY(), centerPos.getZ() + leftShoulderOffset.getZ(), centerMarker.getBodyRotation().getYaw(), centerMarker.getBodyRotation().getPitch());
+                    float yaw = (float) Math.toRadians(armorStandEntity.getLeftArmRotation().getYaw());
+                    float pitch =(float) Math.toRadians(armorStandEntity.getLeftArmRotation().getPitch());
+                    double x = Math.sin(pitch) * Math.cos(Math.toRadians(yaw));
+                    double y = Math.sin(yaw);
+                    double z = Math.sin(yaw) * Math.cos(pitch);
+                    scoreboard.getPlayerScore("MrAnsk", shoulderLeftX).setScore(Math.round((int) (x + pitch) * 10000));
+                    scoreboard.getPlayerScore("MrAnsk", shoulderLeftY).setScore(Math.round((int) (y + yaw) * 10000));
                     break;
 
                 case "rightShoulder":
                     armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_upper_armX, move.right_upper_armY, 0)));
                     Vec3d rightShoulderOffset = new Vec3d(-nbt.getFloat("Long")+1, 0, 0);
-                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightShoulderOffset.getX(), centerPos.getY() + rightShoulderOffset.getY(), centerPos.getZ() + rightShoulderOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightShoulderOffset.getX(), centerPos.getY() + rightShoulderOffset.getY(), centerPos.getZ() + rightShoulderOffset.getZ(), centerMarker.getBodyRotation().getYaw(), centerMarker.getBodyRotation().getPitch());
                     //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(rightShoulderOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
+                    float yaw1 = (float) Math.toRadians(armorStandEntity.getRightArmRotation().getYaw());
+                    float pitch1 =(float) Math.toRadians(armorStandEntity.getRightArmRotation().getPitch());
+                    double x1 = Math.sin(pitch1) * Math.cos(Math.toRadians(yaw1));
+                    double y1 = Math.sin(yaw1);
+                    double z1 = Math.sin(yaw1) * Math.cos(pitch1);
+                    /*player.sendMessage(new LiteralText("LeftX: " + x1 * 10000),false);
+                    player.sendMessage(new LiteralText("LeftY: "+ y1 * 10000),false);
+                    player.sendMessage(new LiteralText("LeftZ: "+ z1 * 10000),false);*/
+                    scoreboard.getPlayerScore("MrAnsk", shoulderRightX).setScore((int) (x1 + pitch1) * 10000);
+                    scoreboard.getPlayerScore("MrAnsk", shoulderRightY).setScore((int) (y1 + yaw1) * 10000);
                     break;
 
                 default:

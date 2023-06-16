@@ -16,6 +16,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MarkerEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardCriterion;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -63,6 +66,7 @@ public class PlayCommand {
     public static int testCommandContext(CommandContext<ServerCommandSource> context, String action) throws CommandSyntaxException {
 
         ServerPlayerEntity player = context.getSource().getPlayer();
+
         ServerWorld world = player.getWorld();
         BlockPos posi = player.getBlockPos().offset(player.getHorizontalFacing(), 2);
 
@@ -80,11 +84,11 @@ public class PlayCommand {
 
         player.getServer().getCommandManager().execute(player.getCommandSource().withSilent(), "/data merge entity " + armorStandEntity.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
         //armorStandEntity.setStackInHand(Hand.MAIN_HAND, player.getMainHandStack());
-        armorStandEntity.setRightArmRotation(new EulerAngle(90,0,90));
+        armorStandEntity.setRightArmRotation(new EulerAngle(90,0,0));
         Vec3d handPos = getHandPos(armorStandEntity);
         Vec3d shoulderPos = getShoulderPos(armorOtherEntity);
         double x = handPos.getX() - shoulderPos.getX();
-        double y = handPos.getY() - shoulderPos.getY() - 1.4;
+        double y = handPos.getY() - shoulderPos.getY();
         double z = handPos.getZ() - shoulderPos.getZ();
 
         armorOtherEntity.updatePositionAndAngles(shoulderPos.getX() + x, shoulderPos.getY() + y, shoulderPos.getZ() + z,0,0);
@@ -97,6 +101,15 @@ public class PlayCommand {
 
     }
     //works with static coords, not rotation
+    public static Vec3d getHandPos(ArmorStandEntity armor) {
+        Vec3d pos = armor.getPos();
+        float yaw = (float) Math.toRadians(armor.getRightArmRotation().getYaw());
+        float pitch =(float) Math.toRadians(armor.getRightArmRotation().getPitch());
+        double x = pos.getX() + 0.4 * Math.sin(pitch) * Math.cos(Math.toRadians(yaw));
+        double y = pos.getY() + 1.4 * Math.sin(yaw);
+        double z = pos.getZ() - 0.4 * Math.sin(yaw) * Math.cos(pitch);
+        return new Vec3d(x, y, z);
+    }
     /*public static Vec3d getHandPos(ArmorStandEntity armor) {
         Vec3d pos = armor.getPos();
         float yaw = armor.getYaw();
@@ -120,7 +133,7 @@ public class PlayCommand {
         return new Vec3d(x, y, z);
     }*/
 
-    public static Vec3d getHandPos(ArmorStandEntity armor) {
+    /*public static Vec3d getHandPos(ArmorStandEntity armor) {
         Vec3d pos = armor.getPos();
         EulerAngle armRotation = armor.getRightArmRotation();
         double armRotX = Math.toRadians(armRotation.getPitch());
@@ -133,7 +146,7 @@ public class PlayCommand {
         x += Math.sin(armRotZ) * Math.cos(armRotX);
         z -= Math.cos(armRotZ) * Math.cos(armRotX);
         return new Vec3d(x, y, z);
-    }
+    }*/
 
 
 
