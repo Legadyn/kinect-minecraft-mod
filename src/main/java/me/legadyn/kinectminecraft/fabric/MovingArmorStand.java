@@ -9,7 +9,6 @@ import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.util.math.Vec3d;
@@ -43,7 +42,7 @@ public class MovingArmorStand {
         this.player = player;
 
         armorStand = EntityType.ARMOR_STAND.create(world);
-        armorStand.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        armorStand.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, player.getBodyYaw(), 0.0F);
         armorStand.setNoGravity(true);
 
         armorYaw = armorStand.getBodyRotation().getYaw();
@@ -53,7 +52,7 @@ public class MovingArmorStand {
 
         world.spawnEntity(armorStand);
         playerYaw = armorStand.getYaw();
-        player.getServer().getCommandManager().execute(player.getCommandSource().withSilent(),"/data merge entity "+ armorStand.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
+        player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource().withSilent(),"/data merge entity "+ armorStand.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
 
     }
 
@@ -74,6 +73,8 @@ public class MovingArmorStand {
             KinectArmorStand.getInstance().getCache().add(move);
         }
 
+        armorYaw = armorStand.getBodyRotation().getYaw();
+
         armorStand.setHeadRotation(toEulerAngle(new Vec3f(move.headPitch,0,0)));
 
         armorStand.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_armX,move.right_armY,0)));
@@ -84,8 +85,8 @@ public class MovingArmorStand {
 
         //check if is refresh or update - check if armorstand.getyaw is ok
         //armorStand.updatePositionAndAngles(armorX - move.vecZ, armorY - move.vecY , armorZ - move.vecX, (float) (armorYaw - (move.yaw * 0.8)),  move.pitch + 10);
-        float scaleFactor = 500.0f;
-        armorStand.updatePositionAndAngles(armorStand.getX() - (move.vecZ / scaleFactor), armorStand.getY() - (move.vecY / scaleFactor), armorStand.getZ() - (move.vecX / scaleFactor), (float) (armorYaw - ((move.yaw * 0.8)/120)),  move.pitch + 10);
+        float scaleFactor = 1.0f;
+        armorStand.updatePositionAndAngles(armorStand.getX() - (move.vecZ / scaleFactor), armorStand.getY() - (move.vecY / scaleFactor), armorStand.getZ() - (move.vecX / scaleFactor), (float) (armorYaw - (move.yaw * 0.8)),  move.pitch + 10);
         //player.sendMessage(new LiteralText("X: " + armorStand.getX() + " Y: " + armorStand.getY() + " Z: " + armorStand.getZ()), false);
     }
 

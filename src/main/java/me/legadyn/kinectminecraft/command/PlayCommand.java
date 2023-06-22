@@ -3,6 +3,7 @@ package me.legadyn.kinectminecraft.command;
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -12,6 +13,7 @@ import me.legadyn.kinectminecraft.fabric.ConvertedArmorStand;
 import me.legadyn.kinectminecraft.utils.FileUtils;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.client.render.entity.model.ArmorStandEntityModel;
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MarkerEntity;
@@ -23,7 +25,7 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 
@@ -43,7 +45,7 @@ public class PlayCommand {
 
     private static long wait = 0;
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(CommandManager.literal("kinect")
                 .then(CommandManager.literal("multiplay").then(CommandManager.argument("action", StringArgumentType.string())
                         .executes(
@@ -82,7 +84,8 @@ public class PlayCommand {
         armorOtherEntity.setNoGravity(true);
         armorOtherEntity.updatePositionAndAngles(posi.getX() + 0.5D, posi.getY(), posi.getZ() + 0.5D, 0.0F, 0.0F);
 
-        player.getServer().getCommandManager().execute(player.getCommandSource().withSilent(), "/data merge entity " + armorStandEntity.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
+        player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource().withSilent(), "/data merge entity " + armorStandEntity.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
+
         //armorStandEntity.setStackInHand(Hand.MAIN_HAND, player.getMainHandStack());
         armorStandEntity.setRightArmRotation(new EulerAngle(90,0,0));
         Vec3d handPos = getHandPos(armorStandEntity);
@@ -94,9 +97,9 @@ public class PlayCommand {
         armorOtherEntity.updatePositionAndAngles(shoulderPos.getX() + x, shoulderPos.getY() + y, shoulderPos.getZ() + z,0,0);
 
         //armorOtherEntity.updatePosition(armorStandEntity.getX() + diffX, armorStandEntity.getY() + diffY, armorStandEntity.getZ() + diffZ);
-        player.sendMessage(new LiteralText("X: "+ armorStandEntity.getX()+ " Y: "+ armorStandEntity.getY() + " Z: " + armorStandEntity.getZ()), false);
-        player.sendMessage(new LiteralText("X: "+ armorOtherEntity.getX()+ " Y: "+ armorOtherEntity.getY() + " Z: " + armorOtherEntity.getZ()), false);
-        player.sendMessage(new LiteralText("X:" + handPos.x + " Y:" + handPos.y + " Z:" + handPos.z), false);
+        player.sendMessage(Text.literal("X: "+ armorStandEntity.getX()+ " Y: "+ armorStandEntity.getY() + " Z: " + armorStandEntity.getZ()), false);
+        player.sendMessage(Text.literal("X: "+ armorOtherEntity.getX()+ " Y: "+ armorOtherEntity.getY() + " Z: " + armorOtherEntity.getZ()), false);
+        player.sendMessage(Text.literal("X:" + handPos.x + " Y:" + handPos.y + " Z:" + handPos.z), false);
         return 1;
 
     }
@@ -205,6 +208,13 @@ public class PlayCommand {
         return 1;
     }
 
+
+    /*SplitConvertedArmorStand
+
+        se pasa lista y jugador por parametro
+    *
+
+    */
     public static int runMulti(CommandContext<ServerCommandSource> context, String action) throws CommandSyntaxException {
         ServerCommandSource src = context.getSource();
 
@@ -227,7 +237,7 @@ public class PlayCommand {
                         return;
                     }
                     KinectArmorStand.LOGGER.info("Tick " + tick);
-                    splitArmorStand.nextMovement(tick);
+                    splitArmorStand.nextSplitMovement(tick);
                     try {
                         FileUtils.writeMultiState(splitArmorStand.getMarker().getUuidAsString(), splitArmorStand.getArmorStands(),tick);
 

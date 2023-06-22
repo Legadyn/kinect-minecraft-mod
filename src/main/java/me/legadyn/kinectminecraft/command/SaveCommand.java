@@ -9,9 +9,9 @@ import me.legadyn.kinectminecraft.KinectArmorStand;
 import me.legadyn.kinectminecraft.fabric.MovingArmorStand;
 import me.legadyn.kinectminecraft.fabric.SplitArmorStand;
 import me.legadyn.kinectminecraft.utils.FileUtils;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -31,7 +31,7 @@ import java.util.LinkedList;
 
 public class SaveCommand {
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
             LiteralArgumentBuilder<ServerCommandSource> kinectCommand = CommandManager.literal("kinect").executes(
                     context -> {
                         KinectArmorStand.realtimeArmorStand = new MovingArmorStand(context.getSource().getPlayer().getPos());

@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.core.jmx.Server;
@@ -121,7 +121,7 @@ public class FileUtils {
             s = new Scanner(new File(animationsPath.resolve(name + ".txt").toString()));
         } catch (FileNotFoundException e) {
             if(player != null) {
-                player.sendMessage(new LiteralText("Animation not found"), false);
+                player.sendMessage(Text.literal("Animation not found"), false);
             }
         }
 

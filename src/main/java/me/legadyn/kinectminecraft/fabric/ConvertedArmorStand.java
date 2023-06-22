@@ -9,7 +9,6 @@ import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 
@@ -39,12 +38,12 @@ public class ConvertedArmorStand {
         BlockPos pos = player.getBlockPos().offset(player.getHorizontalFacing(), 2);
         playerYaw = player.getYaw();
         armorStand = EntityType.ARMOR_STAND.create(world);
-        armorStand.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        armorStand.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, player.getBodyYaw(), 0.0F);
         armorStand.setNoGravity(true);
         armorYaw = armorStand.getBodyRotation().getYaw();
 
         world.spawnEntity(armorStand);
-        player.getServer().getCommandManager().execute(player.getCommandSource().withSilent(),"/data merge entity "+ armorStand.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
+        player.getServer().getCommandManager().executeWithPrefix(player.getCommandSource().withSilent(),"/data merge entity "+ armorStand.getUuidAsString() + " {NoBasePlate:1b,ShowArms:1b}");
 
         addMovements(list);
     }
@@ -57,7 +56,7 @@ public class ConvertedArmorStand {
         playerYaw = player.getYaw();
 
         centerMarker = EntityType.ARMOR_STAND.create(world);
-        centerMarker.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        centerMarker.refreshPositionAndAngles(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, player.getBodyYaw(), 0.0F);
         centerMarker.setNoGravity(true);
         world.spawnEntity(centerMarker);
         centerYaw = centerMarker.getYaw();
@@ -93,58 +92,6 @@ public class ConvertedArmorStand {
         ArmorStandMovement move = movements.get(tick);
         //player.sendMessage(new LiteralText("Yaw: " + armorStand.getYaw() + " Pitch: " + armorStand.getPitch()+ " X:" + armorStand.getX() + " Y:" + armorStand.getY() + " Z:" + armorStand.getZ()), false);
 
-
-        //if a split armorstand exists, takes priority
-        if(centerMarker != null) {
-            for(Map.Entry<String, ArmorStandEntity> entry : armorStands.entrySet()) {
-                String key = entry.getKey();
-                ArmorStandEntity armorStandEntity = entry.getValue();
-                NbtCompound nbt = armorStandEntity.getMainHandStack().getOrCreateNbt();
-                //Vec3d centerPos = centerMarker.getPos();
-
-                switch (key) {
-                    case "head":
-                        armorStandEntity.setHeadRotation(toEulerAngle(new Vec3f(move.headPitch, 0, 0)));
-                        Vec3d headOffset = new Vec3d(0, nbt.getFloat("Long"), 0);
-                        armorStandEntity.updatePositionAndAngles(centerPos.getX() + headOffset.getX(), centerPos.getY() + headOffset.getY(), centerPos.getZ() + headOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-                        //armorStandEntity.updatePositionAndAngles(centerPos.getX() + headOffset.getX(), centerPos.getY() + headOffset.getY(), centerPos.getZ() + headOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-                        break;
-
-                    case "leftForeArm":
-                        armorStandEntity.setLeftArmRotation(toEulerAngle(new Vec3f(-move.left_lower_armX, move.left_lower_armY, 0)));
-                        Vec3d leftForeArmOffset = new Vec3d(nbt.getFloat("Long"), 0, 0);
-                        armorStandEntity.updatePositionAndAngles(centerPos.getX() + leftForeArmOffset.getX(), centerPos.getY() + leftForeArmOffset.getY(), centerPos.getZ() + leftForeArmOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-                        //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(leftForeArmOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
-                        break;
-
-                    case "rightForeArm":
-                        armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_lower_armX, move.right_lower_armY, 0)));
-                        Vec3d rightForeArmOffset = new Vec3d(-nbt.getFloat("Long"), 0, 0);
-                        armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightForeArmOffset.getX(), centerPos.getY() + rightForeArmOffset.getY(), centerPos.getZ() + rightForeArmOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-                        //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(rightForeArmOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
-                        break;
-
-                    case "leftShoulder":
-                        armorStandEntity.setLeftArmRotation(toEulerAngle(new Vec3f(-move.left_upper_armX, move.left_upper_armY, 0)));
-                        Vec3d leftShoulderOffset = new Vec3d(nbt.getFloat("Long")-1, 0, 0);
-                        armorStandEntity.updatePositionAndAngles(centerPos.getX() + leftShoulderOffset.getX(), centerPos.getY() + leftShoulderOffset.getY(), centerPos.getZ() + leftShoulderOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-                        //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(leftShoulderOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
-                        break;
-
-                    case "rightShoulder":
-                        armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_upper_armX, move.right_upper_armY, 0)));
-                        Vec3d rightShoulderOffset = new Vec3d(-nbt.getFloat("Long")+1, 0, 0);
-                        armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightShoulderOffset.getX(), centerPos.getY() + rightShoulderOffset.getY(), centerPos.getZ() + rightShoulderOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-                        //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(rightShoulderOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-            centerMarker.updatePositionAndAngles(centerMarker.getX() - (move.vecZ/1.0f), centerMarker.getY() - (move.vecY/1.0f), centerMarker.getZ() - (move.vecX/1.0f), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
-            return;
-        }
         //player.sendMessage(new LiteralText("Yaw: " + armorStand.getYaw() + " Pitch: " + armorStand.getPitch()+ " X:" + armorStand.getX() + " Y:" + armorStand.getY() + " Z:" + armorStand.getZ()), false);
         armorStand.setHeadRotation(toEulerAngle(new Vec3f(move.headPitch,0,0)));
 
@@ -155,47 +102,62 @@ public class ConvertedArmorStand {
         armorStand.setLeftLegRotation(toEulerAngle(new Vec3f(move.left_legX,move.left_legY,0)));
 
         //check if is refresh or update - check if armorstand.getyaw is ok
-        float scaleFactor = 1.0f;
-        armorStand.updatePositionAndAngles(armorStand.getX() - (move.vecZ / scaleFactor), armorStand.getY() - (move.vecY / scaleFactor), armorStand.getZ() - (move.vecX / scaleFactor), (float) (armorYaw - ((move.yaw * 0.8))),  move.pitch + 10);
+        armorStand.updatePositionAndAngles(armorStand.getX() - move.vecZ, armorStand.getY() - move.vecY, armorStand.getZ() - move.vecX, (float) (armorYaw - (move.yaw * 0.8)),  move.pitch + 10);
 
     }
 
     public void nextSplitMovement(short tick) {
         ArmorStandMovement move = movements.get(tick);
-
+        centerYaw = centerMarker.getBodyRotation().getYaw();
         for(Map.Entry<String, ArmorStandEntity> entry : armorStands.entrySet()) {
             String key = entry.getKey();
             ArmorStandEntity armorStandEntity = entry.getValue();
+            NbtCompound nbt = armorStandEntity.getMainHandStack().getOrCreateNbt();
+            //Vec3d centerPos = centerMarker.getPos();
 
             switch (key) {
-                case "head": armorStandEntity.setHeadRotation(toEulerAngle(new Vec3f(move.headPitch, 0, 0)));
-                    armorStandEntity.refreshPositionAndAngles(centerMarker.getBlockPos().add(new Vec3i(0, 2, 0)),centerMarker.getYaw(),centerMarker.getPitch());
+                case "head":
+                    armorStandEntity.setHeadRotation(toEulerAngle(new Vec3f(move.headPitch, 0, 0)));
+                    Vec3d headOffset = new Vec3d(0,0,0);//new Vec3d(0, nbt.getFloat("Long"), 0);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + headOffset.getX(), centerPos.getY() + headOffset.getY(), centerPos.getZ() + headOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
+                    //armorStandEntity.updatePositionAndAngles(centerPos.getX() + headOffset.getX(), centerPos.getY() + headOffset.getY(), centerPos.getZ() + headOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
                     break;
 
-                case "leftForeArm": armorStandEntity.setLeftArmRotation(toEulerAngle(new Vec3f(-move.left_armX, move.left_armY, 0)));
-                    armorStandEntity.refreshPositionAndAngles(centerMarker.getBlockPos().add(new Vec3i(1, 0, 0)),centerMarker.getYaw(),centerMarker.getPitch());
+                case "leftForeArm":
+                    armorStandEntity.setLeftArmRotation(toEulerAngle(new Vec3f(-move.left_lower_armX, move.left_lower_armY, 0)));
+                    Vec3d leftForeArmOffset = new Vec3d(0,0,0);//new Vec3d(nbt.getFloat("Long"), 0, 0);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + leftForeArmOffset.getX(), centerPos.getY() + leftForeArmOffset.getY(), centerPos.getZ() + leftForeArmOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
+                    //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(leftForeArmOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
                     break;
 
-                case "rightForeArm": armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_armX, move.right_armY, 0)));
-                    armorStandEntity.refreshPositionAndAngles(centerMarker.getBlockPos().add(new Vec3i(-1, 0, 0)),centerMarker.getYaw(),centerMarker.getPitch());
+                case "rightForeArm":
+                    armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_lower_armX, move.right_lower_armY, 0)));
+                    Vec3d rightForeArmOffset = new Vec3d(0,0,0);//new Vec3d(-nbt.getFloat("Long"), 0, 0);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightForeArmOffset.getX(), centerPos.getY() + rightForeArmOffset.getY(), centerPos.getZ() + rightForeArmOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
+                    //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(rightForeArmOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
                     break;
 
-                //case "leftLeg" -> armorStandEntity.setLeftLegRotation(toEulerAngle(new Vec3f(move.left_legX, move.left_legY, 0)));
-                //case "rightLeg" -> armorStandEntity.setRightLegRotation(toEulerAngle(new Vec3f(move.right_legX, move.right_legY, 0)));
-                case "leftShoulder": armorStandEntity.setLeftArmRotation(toEulerAngle(new Vec3f(-move.left_upper_armX, move.left_upper_armY, 0)));
-                    armorStandEntity.refreshPositionAndAngles(centerMarker.getBlockPos().add(new Vec3i(2, 0, 0)),centerMarker.getYaw(),centerMarker.getPitch());
+                case "leftShoulder":
+                    armorStandEntity.setLeftArmRotation(toEulerAngle(new Vec3f(-move.left_upper_armX, move.left_upper_armY, 0)));
+                    Vec3d leftShoulderOffset = new Vec3d(0,0,0);//new Vec3d(nbt.getFloat("Long")-1, 0, 0);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + leftShoulderOffset.getX(), centerPos.getY() + leftShoulderOffset.getY(), centerPos.getZ() + leftShoulderOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
+                    //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(leftShoulderOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
                     break;
 
-                case "rightShoulder": armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_upper_armX, move.right_upper_armY, 0)));
-                    armorStandEntity.refreshPositionAndAngles(centerMarker.getBlockPos().add(new Vec3i(-2, 0, 0)),centerMarker.getYaw(),centerMarker.getPitch());
+                case "rightShoulder":
+                    armorStandEntity.setRightArmRotation(toEulerAngle(new Vec3f(-move.right_upper_armX, move.right_upper_armY, 0)));
+                    Vec3d rightShoulderOffset = new Vec3d(0,0,0); //new Vec3d(-nbt.getFloat("Long")+1, 0, 0);
+                    armorStandEntity.updatePositionAndAngles(centerPos.getX() + rightShoulderOffset.getX(), centerPos.getY() + rightShoulderOffset.getY(), centerPos.getZ() + rightShoulderOffset.getZ(), (float) (centerYaw - ((move.yaw * 0.8))), move.pitch + 10);
+                    //armorStandEntity.refreshPositionAndAngles(new BlockPos(centerMarker.getPos().add(rightShoulderOffset)), (float) (centerYaw - ((move.yaw * 0.8)/120)), move.pitch + 10);
                     break;
 
-                default: break;
+                default:
+                    break;
             }
 
         }
         //check if is refresh or update - check if armorstand.getyaw is ok
-        centerMarker.updatePositionAndAngles(centerMarker.getX() - move.vecZ, centerMarker.getY() - move.vecY , centerMarker.getZ() - move.vecX, (float) (centerMarker.getYaw() - (move.yaw * 0.8)),  move.pitch + 10);
+        centerMarker.updatePositionAndAngles(centerMarker.getX() - move.vecZ, centerMarker.getY() - move.vecY, centerMarker.getZ() - move.vecX, (float) (centerYaw - (move.yaw * 0.8)), move.pitch + 10);
     }
 
     private EulerAngle toEulerAngle(Vec3f rotation) {

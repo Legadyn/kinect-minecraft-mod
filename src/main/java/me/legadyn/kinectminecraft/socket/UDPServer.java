@@ -2,6 +2,7 @@ package me.legadyn.kinectminecraft.socket;
 
 import java.io.IOException;
 import java.net.*;
+import java.net.InetAddress;
 
 
 public class UDPServer {
@@ -14,8 +15,8 @@ public class UDPServer {
         onInitialize();
     }
 
-    public void initializeServer() throws SocketException {
-        this.udpSocket = new DatagramSocket(62034);
+    public void initializeServer() throws SocketException, UnknownHostException {
+        this.udpSocket = new DatagramSocket(25593, InetAddress.getByName("0.0.0.0"));
     }
 
     public void listen() {

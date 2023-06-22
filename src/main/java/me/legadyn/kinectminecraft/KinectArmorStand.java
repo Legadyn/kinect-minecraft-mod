@@ -10,7 +10,7 @@ import me.legadyn.kinectminecraft.utils.FileUtils;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
@@ -63,10 +63,10 @@ public class KinectArmorStand implements ModInitializer {
 	public void onInitialize() {
 		instance = this;
 
-		CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 
-			PlayCommand.register(dispatcher, dedicated);
-			SaveCommand.register(dispatcher, dedicated);
+			PlayCommand.register(dispatcher, registryAccess, environment);
+			SaveCommand.register(dispatcher, registryAccess, environment);
 		});
 
 
