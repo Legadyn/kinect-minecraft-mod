@@ -1,45 +1,33 @@
 package me.legadyn.kinectminecraft.command;
 
-import com.google.gson.JsonObject;
-import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.ParseResults;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import me.legadyn.kinectminecraft.ArmorStandMovement;
 import me.legadyn.kinectminecraft.KinectArmorStand;
-import me.legadyn.kinectminecraft.fabric.ConvertedArmorStand;
+import me.legadyn.kinectminecraft.fabric.Converted;
+import me.legadyn.kinectminecraft.fabric.MultiArmorStand;
+import me.legadyn.kinectminecraft.fabric.SimpleArmorStand;
 import me.legadyn.kinectminecraft.utils.FileUtils;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.minecraft.client.render.entity.model.ArmorStandEntityModel;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.MarkerEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.EulerAngle;
+import net.minecraft.util.math.Vec3d;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.Time;
 import java.util.LinkedList;
-import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 public class PlayCommand {
 
@@ -47,20 +35,20 @@ public class PlayCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(CommandManager.literal("kinect")
-                .then(CommandManager.literal("multiplay").then(CommandManager.argument("action", StringArgumentType.string())
+                .then(CommandManager.literal("multiplay").then(CommandManager.argument("animation", StringArgumentType.string())
                         .executes(
-                                context -> runMulti(context, StringArgumentType.getString(context, "action"))
-                        ))
+                                context -> runMulti(context, StringArgumentType.getString(context, "animation"),context.getSource().getPlayer().getX(),context.getSource().getPlayer().getY(),context.getSource().getPlayer().getZ())
+                        ).then(coordinateArguments(PlayCommand::runMulti)))
                 )
                 .then(CommandManager.literal("test").then(CommandManager.argument("action", StringArgumentType.string())
                         .executes(
                                 context -> testCommandContext(context, StringArgumentType.getString(context, "action"))
                         ))
                 )
-                .then(CommandManager.literal("play").then(CommandManager.argument("action", StringArgumentType.string())
+                .then(CommandManager.literal("play").then(CommandManager.argument("animation", StringArgumentType.string())
                         .executes(
-                                context -> run(context, StringArgumentType.getString(context, "action"))
-                        ))));
+                                context -> run(context, StringArgumentType.getString(context, "animation"), context.getSource().getPlayer().getX(),context.getSource().getPlayer().getY(),context.getSource().getPlayer().getZ())
+                        ).then(coordinateArguments(PlayCommand::run)))));
 
 
     }
@@ -164,7 +152,7 @@ public class PlayCommand {
     }
 
 
-    public static int run(CommandContext<ServerCommandSource> context, String action) throws CommandSyntaxException {
+    public static int run(CommandContext<ServerCommandSource> context, String action, double x, double y, double z) throws CommandSyntaxException {
         ServerCommandSource src = context.getSource();
 
         //read movements from file
@@ -173,7 +161,7 @@ public class PlayCommand {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleAtFixedRate(new Runnable() {
             short tick = 0;
-            ConvertedArmorStand convertedArmorStand = new ConvertedArmorStand(src.getPlayer(), list);
+            SimpleArmorStand convertedArmorStand = new SimpleArmorStand(src.getPlayer(), list, x, y, z);
             @Override
             public void run() {
                 if (convertedArmorStand != null) {
@@ -182,14 +170,10 @@ public class PlayCommand {
                     tick++;
                     if (tick > list.size() - 1) {
                         convertedArmorStand = null;
-                        KinectArmorStand.LOGGER.info("coso terminado");
                         return;
                     }
-                    KinectArmorStand.LOGGER.info("Tick " + tick);
                     convertedArmorStand.nextMovement(tick);
-                    KinectArmorStand.LOGGER.info("Ticky " + tick);
-                    FileUtils.writeState(convertedArmorStand.getArmorStand().getUuidAsString(), tick);
-                    KinectArmorStand.LOGGER.info("Tickyy " + tick);
+                    FileUtils.writeState(convertedArmorStand.getArmorStand().getUuidAsString(), tick, action);
 
                     long duration = System.currentTimeMillis() - startTime;
                     float delayMillis = 30;
@@ -203,7 +187,7 @@ public class PlayCommand {
                     }
                 }
             }
-        }, 0, 1, TimeUnit.MILLISECONDS);
+        }, 0, 50, TimeUnit.MILLISECONDS);
         KinectArmorStand.scheduledExecutorServices.add(executor);
         return 1;
     }
@@ -215,7 +199,7 @@ public class PlayCommand {
     *
 
     */
-    public static int runMulti(CommandContext<ServerCommandSource> context, String action) throws CommandSyntaxException {
+    public static int runMulti(CommandContext<ServerCommandSource> context, String action, double x, double y, double z) {
         ServerCommandSource src = context.getSource();
 
         //read movements from file
@@ -225,7 +209,7 @@ public class PlayCommand {
 
         executor.scheduleAtFixedRate(new Runnable() {
             short tick = 0;
-            ConvertedArmorStand splitArmorStand = new ConvertedArmorStand(src.getPlayer(), list, true);
+            MultiArmorStand splitArmorStand = new MultiArmorStand(src.getPlayer(), list, x, y, z);
             @Override
             public void run() {
                 if (splitArmorStand != null) {
@@ -237,9 +221,9 @@ public class PlayCommand {
                         return;
                     }
                     KinectArmorStand.LOGGER.info("Tick " + tick);
-                    splitArmorStand.nextSplitMovement(tick);
+                    splitArmorStand.nextMovement(tick);
                     try {
-                        FileUtils.writeMultiState(splitArmorStand.getMarker().getUuidAsString(), splitArmorStand.getArmorStands(),tick);
+                        FileUtils.writeMultiState(splitArmorStand.getArmorStand().getUuidAsString(), splitArmorStand.getArmorStands(),tick, action);
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -257,7 +241,7 @@ public class PlayCommand {
                     }
                 }
             }
-        }, 0, 1, TimeUnit.MILLISECONDS);
+        }, 0, 50, TimeUnit.MILLISECONDS);
         KinectArmorStand.scheduledExecutorServices.add(executor);
         return 1;
     }
@@ -273,7 +257,7 @@ public class PlayCommand {
             //pass tick from json file to resume from
             short tick = ticked;
 
-            ConvertedArmorStand convertedArmorStand = isMulti ? new ConvertedArmorStand((ArmorStandEntity) entity, list, true) : new ConvertedArmorStand((ArmorStandEntity) entity, list) ;
+            Converted convertedArmorStand = isMulti ? new MultiArmorStand((ArmorStandEntity) entity, list) : new SimpleArmorStand((ArmorStandEntity) entity, list) ;
 
             @Override
             public void run() {
@@ -286,8 +270,11 @@ public class PlayCommand {
                         return;
                     }
                     convertedArmorStand.nextMovement(tick);
-                    FileUtils.writeState(convertedArmorStand.getArmorStand().getUuidAsString(), tick);
-
+                    if(convertedArmorStand instanceof SimpleArmorStand) {
+                        FileUtils.writeState(convertedArmorStand.getArmorStand().getUuidAsString(), tick, animation);
+                    } else {
+                        FileUtils.writeMultiState(convertedArmorStand.getArmorStand().getUuidAsString(), convertedArmorStand.getArmorStands(), tick, animation);
+                    }
                     long duration = System.currentTimeMillis() - startTime;
                     float delayMillis = 30;
                     if (duration < delayMillis) {
@@ -300,7 +287,28 @@ public class PlayCommand {
                     }
                 }
             }
-        }, 0, 1, TimeUnit.MILLISECONDS);
+        }, 0, 50, TimeUnit.MILLISECONDS);
         KinectArmorStand.scheduledExecutorServices.add(executor);
+    }
+
+    //Functional interface for use the same method for both commands, runMulti and runSimple
+    @FunctionalInterface
+    interface ContextExecutor {
+        int execute(CommandContext<ServerCommandSource> context, String action, double x, double y, double z) throws CommandSyntaxException;
+    }
+
+    private static ArgumentBuilder<ServerCommandSource, ?> coordinateArguments(ContextExecutor executor) {
+        return CommandManager.argument("x", DoubleArgumentType.doubleArg())
+                .then(CommandManager.argument("y", DoubleArgumentType.doubleArg())
+                        .then(CommandManager.argument("z", DoubleArgumentType.doubleArg())
+                                .executes(context -> executor.execute(
+                                        context,
+                                        StringArgumentType.getString(context, "animation"),
+                                        DoubleArgumentType.getDouble(context, "x"),
+                                        DoubleArgumentType.getDouble(context, "y"),
+                                        DoubleArgumentType.getDouble(context, "z")
+                                ))
+                        )
+                );
     }
 }

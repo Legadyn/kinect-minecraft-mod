@@ -2,21 +2,14 @@ package me.legadyn.kinectminecraft.fabric;
 
 import me.legadyn.kinectminecraft.ArmorStandMovement;
 import me.legadyn.kinectminecraft.KinectArmorStand;
-import net.minecraft.client.render.entity.model.ArmorStandArmorEntityModel;
-import net.minecraft.client.render.entity.model.ArmorStandEntityModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EulerAngle;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3f;
-import net.minecraft.world.World;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 
 public class MovingArmorStand {
@@ -46,9 +39,6 @@ public class MovingArmorStand {
         armorStand.setNoGravity(true);
 
         armorYaw = armorStand.getBodyRotation().getYaw();
-        armorY = pos.getY();
-        armorX = pos.getX() + 0.5D;
-        armorZ = pos.getZ() + 0.5D;
 
         world.spawnEntity(armorStand);
         playerYaw = armorStand.getYaw();
@@ -86,7 +76,7 @@ public class MovingArmorStand {
         //check if is refresh or update - check if armorstand.getyaw is ok
         //armorStand.updatePositionAndAngles(armorX - move.vecZ, armorY - move.vecY , armorZ - move.vecX, (float) (armorYaw - (move.yaw * 0.8)),  move.pitch + 10);
         float scaleFactor = 1.0f;
-        armorStand.updatePositionAndAngles(armorStand.getX() - (move.vecZ / scaleFactor), armorStand.getY() - (move.vecY / scaleFactor), armorStand.getZ() - (move.vecX / scaleFactor), (float) (armorYaw - (move.yaw * 0.8)),  move.pitch + 10);
+        armorStand.updatePosition(armorStand.getX() - (move.vecZ / scaleFactor), armorStand.getY() - (move.vecY / scaleFactor), armorStand.getZ() - (move.vecX / scaleFactor)); //(float) (armorYaw - (move.yaw * 0.8)),  move.pitch + 10
         //player.sendMessage(new LiteralText("X: " + armorStand.getX() + " Y: " + armorStand.getY() + " Z: " + armorStand.getZ()), false);
     }
 

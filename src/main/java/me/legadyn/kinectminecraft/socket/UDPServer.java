@@ -2,7 +2,6 @@ package me.legadyn.kinectminecraft.socket;
 
 import java.io.IOException;
 import java.net.*;
-import java.net.InetAddress;
 
 
 public class UDPServer {

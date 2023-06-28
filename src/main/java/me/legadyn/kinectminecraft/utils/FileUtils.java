@@ -1,20 +1,21 @@
 package me.legadyn.kinectminecraft.utils;
 
-import com.google.gson.JsonObject;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.World;
-import org.apache.logging.log4j.core.jmx.Server;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Scanner;
 
 public class FileUtils {
     public static JSONObject jsonObject;
@@ -67,11 +68,11 @@ public class FileUtils {
         writer.close();
     }
 
-    public static void writeState(String UUID, float value) {
+    public static void writeState(String UUID, float value, String anim) {
 
         JSONObject uuidObject = new JSONObject();
         uuidObject.put("tick", value);
-        uuidObject.put("animation", "armorstand");
+        uuidObject.put("animation", anim);
         jsonObject.put(UUID, uuidObject);
 
         try (FileWriter file = new FileWriter(filePath.toString())) {
@@ -82,11 +83,11 @@ public class FileUtils {
         }
     }
 
-    public static void writeMultiState(String UUID, HashMap<String, ArmorStandEntity> entityHashMap, float value) {
+    public static void writeMultiState(String UUID, HashMap<String, ArmorStandEntity> entityHashMap, float value, String anim) {
 
         JSONObject uuidObject = new JSONObject();
         uuidObject.put("tick", value);
-        uuidObject.put("animation", "armorstand");
+        uuidObject.put("animation", anim);
         for(Map.Entry<String, ArmorStandEntity> part : entityHashMap.entrySet()) {
             uuidObject.put(part.getKey(), part.getValue().getUuid());
         }
@@ -105,7 +106,7 @@ public class FileUtils {
         JSONObject uuidObject = jsonObject.getJSONObject(UUID);
         for(Map.Entry<String, Object> part : uuidObject.toMap().entrySet()) {
             if(!part.getKey().equals("tick") && !part.getKey().equals("animation")) {
-                entityHashMap.put(part.getKey(), (ArmorStandEntity) world.getServer().getWorld(world.getRegistryKey()).getEntity((UUID) part.getValue()));
+                entityHashMap.put(part.getKey(), (ArmorStandEntity) world.getServer().getWorld(world.getRegistryKey()).getEntity(java.util.UUID.fromString(part.getValue().toString())));
             }
         }
         return entityHashMap;
@@ -123,6 +124,8 @@ public class FileUtils {
             if(player != null) {
                 player.sendMessage(Text.literal("Animation not found"), false);
             }
+            e.printStackTrace();
+            return null;
         }
 
         LinkedList<String> list = new LinkedList<>();

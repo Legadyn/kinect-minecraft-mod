@@ -1,18 +1,13 @@
 package me.legadyn.kinectminecraft.mixin;
 
 import me.legadyn.kinectminecraft.KinectArmorStand;
-import me.legadyn.kinectminecraft.socket.SocketReceivedPacket;
-import me.legadyn.kinectminecraft.socket.UDPServer;
 import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.util.ActionResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
 @Mixin(TitleScreen.class)
 public class ExampleMixin {

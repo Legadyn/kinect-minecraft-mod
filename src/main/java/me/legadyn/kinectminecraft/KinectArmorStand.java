@@ -2,35 +2,26 @@ package me.legadyn.kinectminecraft;
 
 import me.legadyn.kinectminecraft.command.PlayCommand;
 import me.legadyn.kinectminecraft.command.SaveCommand;
+import me.legadyn.kinectminecraft.event.ChangeRotationEvent;
 import me.legadyn.kinectminecraft.fabric.MovingArmorStand;
 import me.legadyn.kinectminecraft.fabric.SplitArmorStand;
 import me.legadyn.kinectminecraft.socket.SocketReceivedPacket;
 import me.legadyn.kinectminecraft.socket.UDPServer;
 import me.legadyn.kinectminecraft.utils.FileUtils;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
-import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.MarkerEntity;
-import net.minecraft.entity.decoration.ArmorStandEntity;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.Marker;
 
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -81,6 +72,8 @@ public class KinectArmorStand implements ModInitializer {
 			return false;
 		});
 
+		ChangeRotationEvent.startListening();
+
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 
 			try {
@@ -101,30 +94,30 @@ public class KinectArmorStand implements ModInitializer {
 			Iterator<String> keys = FileUtils.jsonObject.keys();
 			while(keys.hasNext()) { //read every armorstand obj
 				String uuid = keys.next();
-				if(overworld.getEntity(UUID.fromString(uuid)) != null) return;
+				//if(overworld.getEntity(UUID.fromString(uuid)) != null) return;
 
 				JSONObject uuidObject = FileUtils.jsonObject.getJSONObject(uuid);
 				short tick = (short) uuidObject.getFloat("tick");
 				String animation = uuidObject.getString("animation");
-
+				if(FileUtils.readAnimation(animation, null) == null) return;
 				//Schedule task to 3 sec to give time to the server to load the entities
 				try {
 
-					resumeScheduler.schedule(() -> {
+					resumeScheduler.schedule(() -> server.execute(() -> {
+						if(overworld.getEntity(UUID.fromString(uuid)) == null) return;
 
-						server.execute(() -> {
-							if(overworld.getEntity(UUID.fromString(uuid)).getScoreboardTags().contains("center")) {
-								PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation, true);
-							} else {
-								PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation, false);
-							}
-						});
-
-						}, 2, TimeUnit.SECONDS);
+						if(overworld.getEntity(UUID.fromString(uuid)).getScoreboardTags().contains("center")) {
+							PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation, true);
+							//ChangeRotationEvent.registerArmorStand((ArmorStandEntity) overworld.getEntity(UUID.fromString(uuid)), FileUtils.getMultiState((overworld.getEntity(UUID.fromString(uuid))).getUuidAsString(), overworld));
+						} else {
+							PlayCommand.resumeArmorStand(overworld.getEntity(UUID.fromString(uuid)), tick, animation, false);
+						}
+					}), 3, TimeUnit.SECONDS);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
+
 		});
 
 		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
